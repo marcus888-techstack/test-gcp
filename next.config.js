@@ -1,9 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
-  experimental: {
-    serverActions: true,
-  },
   env: {
     NEXT_PUBLIC_CLOUD_RUN_SERVICE: process.env.K_SERVICE || 'local',
     NEXT_PUBLIC_CLOUD_RUN_REVISION: process.env.K_REVISION || 'local',

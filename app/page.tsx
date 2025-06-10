@@ -23,6 +23,7 @@ interface SecretResult {
   success?: boolean
   secretName?: string
   secretValue?: string
+  message?: string
   error?: string
   hint?: string
 }
