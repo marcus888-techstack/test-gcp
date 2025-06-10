@@ -21,6 +21,15 @@ A demonstration Next.js application showcasing Google Cloud Run features includi
 - A Google Cloud Project with billing enabled
 - Docker Buildx (for ARM Mac users)
 
+## Environment Variables
+
+Set your Google Cloud project ID:
+```bash
+export GCP_PROJECT_ID=your-project-id
+```
+
+This environment variable is used throughout the deployment process and scripts.
+
 ## Local Development
 
 1. Install dependencies:
@@ -39,9 +48,10 @@ A demonstration Next.js application showcasing Google Cloud Run features includi
 
 ### Quick Deploy
 
-1. Set your Google Cloud project ID:
+1. Set your Google Cloud project ID as an environment variable:
    ```bash
    export GCP_PROJECT_ID=your-project-id
+   # Example: export GCP_PROJECT_ID=halogen-basis-461109-u8
    ```
 
 2. Run the deployment script:
@@ -49,29 +59,37 @@ A demonstration Next.js application showcasing Google Cloud Run features includi
    ./deploy.sh
    ```
 
+The deployment script will use the `GCP_PROJECT_ID` environment variable automatically.
+
 ### Manual Deployment
 
-1. Build the Docker image:
+1. Set your project ID (if not already set):
+   ```bash
+   export GCP_PROJECT_ID=your-project-id
+   ```
+
+2. Build the Docker image:
    ```bash
    # For ARM-based Macs (Apple Silicon) - REQUIRED for Cloud Run
-   docker buildx build --platform linux/amd64 -t gcr.io/YOUR_PROJECT_ID/nextjs-cloud-run-demo .
+   docker buildx build --platform linux/amd64 -t gcr.io/${GCP_PROJECT_ID}/nextjs-cloud-run-demo .
    
    # For Intel/AMD systems
-   docker build -t gcr.io/YOUR_PROJECT_ID/nextjs-cloud-run-demo .
+   docker build -t gcr.io/${GCP_PROJECT_ID}/nextjs-cloud-run-demo .
    ```
 
-2. Push to Google Container Registry:
+3. Push to Google Container Registry:
    ```bash
-   docker push gcr.io/YOUR_PROJECT_ID/nextjs-cloud-run-demo
+   docker push gcr.io/${GCP_PROJECT_ID}/nextjs-cloud-run-demo
    ```
 
-3. Deploy to Cloud Run:
+4. Deploy to Cloud Run:
    ```bash
    gcloud run deploy nextjs-cloud-run-demo \
-     --image gcr.io/YOUR_PROJECT_ID/nextjs-cloud-run-demo \
+     --image gcr.io/${GCP_PROJECT_ID}/nextjs-cloud-run-demo \
      --platform managed \
      --region us-central1 \
-     --allow-unauthenticated
+     --allow-unauthenticated \
+     --set-env-vars="GOOGLE_CLOUD_PROJECT=${GCP_PROJECT_ID}"
    ```
 
 ## Testing Cloud Run Features
@@ -108,9 +126,14 @@ The app displays Cloud Run-specific environment variables:
 # Create a secret manually
 echo -n "my-secret-value" | gcloud secrets create test-secret --data-file=-
 
+# Get your Cloud Run service account
+SERVICE_ACCOUNT=$(gcloud run services describe nextjs-cloud-run-demo \
+  --region=us-central1 \
+  --format='value(spec.template.spec.serviceAccountName)')
+
 # Grant access to Cloud Run service account
 gcloud secrets add-iam-policy-binding test-secret \
-  --member="serviceAccount:YOUR_SERVICE_ACCOUNT" \
+  --member="serviceAccount:${SERVICE_ACCOUNT}" \
   --role="roles/secretmanager.secretAccessor"
 
 # Use the web UI to retrieve the secret
