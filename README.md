@@ -10,6 +10,7 @@ A demonstration Next.js application showcasing Google Cloud Run features includi
 - **System Information** - Displays Cloud Run environment variables and system info
 - **CPU Stress Test** - Demonstrates autoscaling capabilities
 - **Secret Manager Integration** - Create and retrieve secrets securely
+- **AI Chatbot** - OpenAI GPT-3.5 Turbo integration with secure API key management
 - **Responsive UI** - Modern interface built with Tailwind CSS
 - **Production-Ready** - Optimized Docker build with multi-stage process
 
@@ -213,6 +214,7 @@ docker buildx build --platform linux/amd64 -t gcr.io/PROJECT_ID/IMAGE_NAME .
 test-gcp/
 ├── app/                    # Next.js app directory
 │   ├── api/               # API routes
+│   │   ├── chat/         # AI chatbot endpoint
 │   │   ├── health/       # Health check endpoint
 │   │   ├── info/         # System information
 │   │   ├── secrets/      # Secret Manager demo

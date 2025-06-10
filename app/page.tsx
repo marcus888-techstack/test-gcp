@@ -28,6 +28,19 @@ interface SecretResult {
   hint?: string
 }
 
+interface ChatMessage {
+  role: 'user' | 'assistant'
+  content: string
+  timestamp: string
+}
+
+interface ChatResponse {
+  success?: boolean
+  message?: string
+  error?: string
+  hint?: string
+}
+
 export default function Home() {
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null)
   const [healthStatus, setHealthStatus] = useState<string>('checking...')
@@ -37,6 +50,9 @@ export default function Home() {
   const [secretValue, setSecretValue] = useState<string>('my-secret-value')
   const [secretResult, setSecretResult] = useState<SecretResult | null>(null)
   const [isLoadingSecret, setIsLoadingSecret] = useState(false)
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
+  const [currentMessage, setCurrentMessage] = useState<string>('')
+  const [isChatLoading, setIsChatLoading] = useState(false)
 
   useEffect(() => {
     fetchSystemInfo()
@@ -110,6 +126,62 @@ export default function Home() {
       setSecretResult({ error: 'Failed to retrieve secret' })
     } finally {
       setIsLoadingSecret(false)
+    }
+  }
+
+  const sendChatMessage = async () => {
+    if (!currentMessage.trim() || isChatLoading) return
+
+    const userMessage: ChatMessage = {
+      role: 'user',
+      content: currentMessage,
+      timestamp: new Date().toISOString()
+    }
+
+    setChatMessages(prev => [...prev, userMessage])
+    setCurrentMessage('')
+    setIsChatLoading(true)
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: currentMessage })
+      })
+
+      const data: ChatResponse = await response.json()
+
+      if (data.success && data.message) {
+        const assistantMessage: ChatMessage = {
+          role: 'assistant',
+          content: data.message,
+          timestamp: new Date().toISOString()
+        }
+        setChatMessages(prev => [...prev, assistantMessage])
+      } else {
+        const errorMessage: ChatMessage = {
+          role: 'assistant',
+          content: `Error: ${data.error || 'Failed to get response'}${data.hint ? ` (${data.hint})` : ''}`,
+          timestamp: new Date().toISOString()
+        }
+        setChatMessages(prev => [...prev, errorMessage])
+      }
+    } catch (error) {
+      const errorMessage: ChatMessage = {
+        role: 'assistant',
+        content: 'Failed to send message. Please try again.',
+        timestamp: new Date().toISOString()
+      }
+      setChatMessages(prev => [...prev, errorMessage])
+    } finally {
+      setIsChatLoading(false)
+    }
+  }
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      sendChatMessage()
     }
   }
 
@@ -291,6 +363,74 @@ export default function Home() {
           </div>
         </div>
 
+        <div className="bg-white shadow rounded-lg p-6 mb-8">
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">
+            AI Chatbot Demo
+          </h2>
+          <p className="text-sm text-gray-600 mb-4">
+            Chat with an AI assistant powered by OpenAI GPT-3.5 Turbo. The API key is securely stored in Google Cloud Secret Manager.
+          </p>
+          
+          <div className="border rounded-lg h-96 flex flex-col">
+            <div className="flex-1 p-4 overflow-y-auto bg-gray-50">
+              {chatMessages.length === 0 ? (
+                <p className="text-gray-500 text-center">Start a conversation...</p>
+              ) : (
+                <div className="space-y-4">
+                  {chatMessages.map((msg, index) => (
+                    <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                        msg.role === 'user' 
+                          ? 'bg-blue-600 text-white' 
+                          : 'bg-white border shadow-sm'
+                      }`}>
+                        <p className="text-sm">{msg.content}</p>
+                        <p className={`text-xs mt-1 ${
+                          msg.role === 'user' ? 'text-blue-200' : 'text-gray-500'
+                        }`}>
+                          {new Date(msg.timestamp).toLocaleTimeString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {isChatLoading && (
+                <div className="flex justify-start">
+                  <div className="bg-white border shadow-sm rounded-lg px-4 py-2 max-w-xs">
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div className="border-t p-4">
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  value={currentMessage}
+                  onChange={(e) => setCurrentMessage(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Type your message..."
+                  disabled={isChatLoading}
+                />
+                <button
+                  onClick={sendChatMessage}
+                  disabled={isChatLoading || !currentMessage.trim()}
+                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  {isChatLoading ? 'Sending...' : 'Send'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <h3 className="text-sm font-semibold text-blue-800 mb-2">
             Testing Tips
@@ -300,6 +440,7 @@ export default function Home() {
             <li>• Run multiple stress tests simultaneously to trigger scaling</li>
             <li>• Check the logs in Cloud Console for detailed information</li>
             <li>• Try different memory/CPU configurations in Cloud Run</li>
+            <li>• For the chatbot, make sure OPENAI_API_KEY secret exists in Secret Manager</li>
           </ul>
         </div>
       </div>
