@@ -1,6 +1,8 @@
 # Next.js Cloud Run Demo
 
-A demonstration Next.js application showcasing Google Cloud Run features including autoscaling, health checks, and environment configuration.
+A demonstration Next.js application showcasing Google Cloud Run features including autoscaling, health checks, secret management, and environment configuration.
+
+**Live Demo**: https://nextjs-cloud-run-demo-843666072335.us-central1.run.app
 
 ## Features
 
@@ -51,7 +53,7 @@ A demonstration Next.js application showcasing Google Cloud Run features includi
 
 1. Build the Docker image:
    ```bash
-   # For ARM-based Macs (Apple Silicon)
+   # For ARM-based Macs (Apple Silicon) - REQUIRED for Cloud Run
    docker buildx build --platform linux/amd64 -t gcr.io/YOUR_PROJECT_ID/nextjs-cloud-run-demo .
    
    # For Intel/AMD systems
@@ -204,3 +206,5 @@ test-gcp/
 - [Cloud Run Documentation](https://cloud.google.com/run/docs)
 - [Next.js Documentation](https://nextjs.org/docs)
 - [Cloud Run Pricing](https://cloud.google.com/run/pricing)
+- [Secret Manager Documentation](https://cloud.google.com/secret-manager/docs)
+- [GitHub Repository](https://github.com/marcus888-techstack/test-gcp)

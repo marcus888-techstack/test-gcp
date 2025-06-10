@@ -1,5 +1,13 @@
 # Deployment Notes - Next.js Cloud Run Demo
 
+## Successful Deployment
+
+**Live URL**: https://nextjs-cloud-run-demo-843666072335.us-central1.run.app
+
+**Project**: halogen-basis-461109-u8  
+**Region**: us-central1  
+**Service**: nextjs-cloud-run-demo  
+
 ## Known Issues and Solutions
 
 ### 1. Missing Public Directory
@@ -15,6 +23,10 @@ mkdir -p public
 ```bash
 docker buildx build --platform linux/amd64 -t gcr.io/PROJECT_ID/IMAGE_NAME .
 ```
+**Alternative**: Use buildx with --push flag to build and push in one step:
+```bash
+docker buildx build --platform linux/amd64 -t gcr.io/PROJECT_ID/IMAGE_NAME --push .
+```
 
 ### 3. Dockerfile ENV Syntax Warnings
 **Warning**: `Legacy key/value format with whitespace separator should not be used`
@@ -29,7 +41,7 @@ gcloud projects add-iam-policy-binding SOURCE_PROJECT \
   --role="roles/artifactregistry.reader"
 ```
 
-## Successful Deployment Example
+## Successful Deployment Commands
 
 1. **Build for AMD64** (on ARM Mac):
    ```bash
@@ -42,7 +54,21 @@ gcloud projects add-iam-policy-binding SOURCE_PROJECT \
      --image gcr.io/halogen-basis-461109-u8/nextjs-cloud-run-demo \
      --platform managed \
      --region us-central1 \
-     --allow-unauthenticated
+     --allow-unauthenticated \
+     --set-env-vars="GOOGLE_CLOUD_PROJECT=halogen-basis-461109-u8"
+   ```
+
+3. **Grant Secret Manager Access** (if not using deploy.sh):
+   ```bash
+   # Get the service account
+   SERVICE_ACCOUNT=$(gcloud run services describe nextjs-cloud-run-demo \
+     --region=us-central1 \
+     --format='value(spec.template.spec.serviceAccountName)')
+   
+   # Grant access to secrets
+   gcloud secrets add-iam-policy-binding demo-secret \
+     --member="serviceAccount:${SERVICE_ACCOUNT}" \
+     --role="roles/secretmanager.secretAccessor"
    ```
 
 ## Quick Commands
@@ -69,3 +95,11 @@ gcloud run services describe nextjs-cloud-run-demo --region us-central1
 3. Use the deployment script which includes ARM detection
 4. Test locally before deploying
 5. Monitor Cloud Run metrics after deployment
+6. Use `docker buildx build --push` to build and push in one command
+7. Set GOOGLE_CLOUD_PROJECT environment variable for Secret Manager
+
+## Useful Links
+
+- **Live Demo**: https://nextjs-cloud-run-demo-843666072335.us-central1.run.app
+- **GitHub Repository**: https://github.com/marcus888-techstack/test-gcp
+- **Cloud Run Console**: https://console.cloud.google.com/run/detail/us-central1/nextjs-cloud-run-demo/metrics?project=halogen-basis-461109-u8
